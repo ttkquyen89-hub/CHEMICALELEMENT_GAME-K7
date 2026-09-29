@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò chơi Hóa Học: Ký hiệu & Tên IUPAC</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #ffffff; /* Nền trắng theo yêu cầu */
+            touch-action: manipulation; /* Tối ưu cho thao tác chạm trên điện thoại */
+        }
+
+        /* Thẻ nguyên tố 3D nổi bật với hình nền BẮT BUỘC */
+        .element-card-3d {
+            /* Đường dẫn chính xác đến file hình ảnh */
+            background-image: url('ChatGPT Image 01_32_48 28 thg 9, 2026.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            border-radius: 1.5rem;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 10px 0 0 #cbd5e1, 0 16px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Lớp phủ mờ 70% bên trong thẻ để làm nổi bật chữ cái nhưng vẫn thấy hình nền */
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 0;
+        }
+
+        /* Nội dung thẻ hiển thị nổi lên trên lớp phủ */
+        .card-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Chữ cái 3D màu cam gạch (Brick Orange) */
+        .brick-3d {
+            background-color: #d9534f; 
+            background-image: linear-gradient(145deg, #ef4444, #c9302c);
+            color: white;
+            box-shadow: 0 5px 0 0 #ac2925, 0 6px 10px rgba(0,0,0,0.25);
+            border: 1px solid #fca5a5;
+            transform: translateY(0);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s;
+        }
+        .brick-3d:active {
+            box-shadow: 0 0px 0 0 #ac2925, 0 2px 4px rgba(0,0,0,0.2);
+            transform: translateY(5px);
+        }
+
+        /* Chữ cái 3D khi sai (Đỏ sậm) */
+        .brick-wrong-3d {
+            background-color: #991b1b; 
+            background-image: linear-gradient(145deg, #b91c1c, #7f1d1d);
+            color: white;
+            box-shadow: 0 5px 0 0 #450a0a, 0 6px 10px rgba(0,0,0,0.25);
+            border: 1px solid #fca5a5;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s;
+        }
+
+        /* Chữ cái 3D khi đúng (Xanh ngọc) */
+        .brick-correct-3d {
+            background-color: #10b981; 
+            background-image: linear-gradient(145deg, #34d399, #059669);
+            color: white;
+            box-shadow: 0 5px 0 0 #064e3b, 0 6px 10px rgba(0,0,0,0.25);
+            border: 1px solid #6ee7b7;
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.2s;
+        }
+
+        /* Hiệu ứng 3D cho tiêu đề trang chủ */
+        .title-3d {
+            color: #fde047; 
+            text-shadow: 
+                -2px -2px 0 #b45309,
+                2px -2px 0 #b45309,
+                -2px 2px 0 #b45309,
+                2px 2px 0 #b45309,
+                0px 5px 0 #92400e, 
+                0px 7px 0 #78350f, 
+                0px 12px 20px rgba(0,0,0,0.6);
+            letter-spacing: 2px;
+        }
+
+        /* Nút START 3D Xanh lá */
+        .btn-start-3d {
+            background-color: #22c55e;
+            background-image: linear-gradient(145deg, #4ade80, #16a34a);
+            color: white;
+            text-shadow: 1px 2px 2px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 0 0 #14532d, 0 15px 25px rgba(0,0,0,0.3);
+            border: 2px solid #bbf7d0;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-start-3d:active {
+            box-shadow: 0 2px 0 0 #14532d, 0 5px 10px rgba(0,0,0,0.3);
+            transform: translateY(6px);
+        }
+
+        /* Animation rung khi sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.5s; }
+
+        /* Animation nảy khi đúng */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { animation: pop 0.4s ease-out; }
+
+        /* Vùng thả chữ (Drop slots) */
+        .slot { transition: border-color 0.2s, background-color 0.2s; }
+        .slot.drag-over { border-color: #3b82f6; background-color: #eff6ff; }
+
+        /* Pháo hoa */
+        #confetti-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- MÀN HÌNH CHÍNH (Trắng tinh, không dùng nền mờ) -->
+    <div id="start-screen" class="absolute inset-0 bg-white flex flex-col items-center justify-center z-40 transition-all duration-500">
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-8 text-center px-4 title-3d z-10">
+            CHEMICAL ELEMENTS GAME
+        </h1>
+        <p class="mb-12 text-xl md:text-2xl max-w-3xl text-center px-6 text-gray-700 font-bold leading-relaxed z-10">
+            Drag and drop the letters to complete the chemical symbol and element name according to the IUPAC system.
+        </p>
+        <button id="btn-start" class="btn-start-3d px-12 py-5 font-extrabold rounded-full text-3xl tracking-widest z-10 cursor-pointer">
+            START
+        </button>
+    </div>
+
+    <!-- MÀN HÌNH CHƠI GAME -->
+    <div id="game-screen" class="hidden flex-1 flex flex-col max-w-7xl mx-auto w-full p-4 relative z-10">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6 bg-gray-50 border-b-2 border-gray-200 p-4 rounded-2xl shadow-sm">
+            <div>
+                <h2 class="text-2xl font-bold text-indigo-900">Danh Pháp Hóa Học</h2>
+                <p class="text-sm text-indigo-600 font-semibold" id="score-display">Tiến độ: 0 / 25</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btn-home" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm" title="Trang chủ">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    <span class="hidden sm:inline">Home</span>
+                </button>
+                <button id="btn-skip" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm">
+                    Bỏ qua
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Khu vực chơi chính -->
+        <div class="flex flex-col md:flex-row gap-8 flex-1 items-start">
+            
+            <!-- TRÁI: Bể chữ cái (Letter Pool) -->
+            <div class="w-full md:w-5/12 flex flex-col h-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 shadow-md">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-800 text-xl">Các chữ cái (Kéo thả)</h3>
+                    <span class="text-xs text-gray-600 bg-gray-200 px-3 py-1 rounded-full shadow-inner">Chạm / Kéo</span>
+                </div>
+                <div id="letter-pool" class="flex flex-wrap gap-3 justify-center content-start">
+                    <!-- Javascript sẽ sinh chữ cái vào đây -->
+                </div>
+            </div>
+
+            <!-- PHẢI: Thẻ Nguyên Tố -->
+            <div class="w-full md:w-7/12 flex flex-col">
+                <div class="element-card-3d p-6 md:p-10 flex-1 flex flex-col items-center justify-center min-h-[400px]">
+                    <!-- Lớp phủ 70% màu trắng -->
+                    <div class="card-overlay"></div>
+                    
+                    <!-- Nội dung nổi lên trên -->
+                    <div class="card-content w-full flex flex-col items-center">
+                        <!-- Tên thường (Tiếng Việt) -->
+                        <div class="text-center mb-8 w-full max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-indigo-100 shadow-sm">
+                            <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mb-2">Tên thường gọi</p>
+                            <h3 id="target-vn-name" class="text-4xl md:text-5xl font-extrabold text-blue-800 drop-shadow-sm">Sắt</h3>
+                        </div>
+
+                        <!-- Khu vực điền: Ký hiệu -->
+                        <div class="w-full flex flex-col items-center mb-6 max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-indigo-100 shadow-sm">
+                            <p class="text-gray-700 font-bold text-sm mb-3">Ký hiệu Hóa học (Phân biệt HOA/thường)</p>
+                            <div id="slots-symbol" class="flex gap-3">
+                                <!-- Javascript sẽ sinh ô thả vào đây -->
+                            </div>
+                        </div>
+
+                        <!-- Khu vực điền: Tên IUPAC -->
+                        <div class="w-full flex flex-col items-center mb-6 max-w-md mx-auto bg-white/90 backdrop-blur-sm rounded-2xl p-5 border-2 border-indigo-100 shadow-sm">
+                            <p class="text-gray-700 font-bold text-sm mb-3">Tên IUPAC (Tiếng Anh)</p>
+                            <div id="slots-iupac" class="flex flex-wrap justify-center gap-3 max-w-full">
+                                <!-- Javascript sẽ sinh ô thả vào đây -->
+                            </div>
+                        </div>
+                        
+                        <!-- Nút Kiểm tra -->
+                        <button id="btn-check" class="mt-2 px-10 py-4 bg-indigo-600 text-white font-black rounded-xl shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/50 transition-all opacity-50 cursor-not-allowed transform translate-y-2 text-xl" disabled>
+                            KIỂM TRA
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        // Danh sách 20 nguyên tố đầu + Fe, Cu, Zn, Ag, Au
+        const elementsData = [
+            { vn: 'Hiđrô', sym: 'H', iupac: 'Hydrogen' },
+            { vn: 'Heli', sym: 'He', iupac: 'Helium' },
+            { vn: 'Liti', sym: 'Li', iupac: 'Lithium' },
+            { vn: 'Beri', sym: 'Be', iupac: 'Beryllium' },
+            { vn: 'Bo', sym: 'B', iupac: 'Boron' },
+            { vn: 'Cacbon', sym: 'C', iupac: 'Carbon' },
+            { vn: 'Nitơ', sym: 'N', iupac: 'Nitrogen' },
+            { vn: 'Oxi', sym: 'O', iupac: 'Oxygen' },
+            { vn: 'Flo', sym: 'F', iupac: 'Fluorine' },
+            { vn: 'Neon', sym: 'Ne', iupac: 'Neon' },
+            { vn: 'Natri', sym: 'Na', iupac: 'Sodium' },
+            { vn: 'Magie', sym: 'Mg', iupac: 'Magnesium' },
+            { vn: 'Nhôm', sym: 'Al', iupac: 'Aluminium' },
+            { vn: 'Silic', sym: 'Si', iupac: 'Silicon' },
+            { vn: 'Photpho', sym: 'P', iupac: 'Phosphorus' },
+            { vn: 'Lưu huỳnh', sym: 'S', iupac: 'Sulfur' },
+            { vn: 'Clo', sym: 'Cl', iupac: 'Chlorine' },
+            { vn: 'Agon', sym: 'Ar', iupac: 'Argon' },
+            { vn: 'Kali', sym: 'K', iupac: 'Potassium' },
+            { vn: 'Canxi', sym: 'Ca', iupac: 'Calcium' },
+            { vn: 'Sắt', sym: 'Fe', iupac: 'Iron' },
+            { vn: 'Đồng', sym: 'Cu', iupac: 'Copper' },
+            { vn: 'Kẽm', sym: 'Zn', iupac: 'Zinc' },
+            { vn: 'Bạc', sym: 'Ag', iupac: 'Silver' },
+            { vn: 'Vàng', sym: 'Au', iupac: 'Gold' }
+        ];
+
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            playedIndices: [],
+            currentElement: null,
+            pool: [],       
+            symbolSlots: [], 
+            iupacSlots: []   
+        };
+
+        let synth, errorSynth;
+
+        // Các thành phần DOM
+        const uiStartScreen = document.getElementById('start-screen');
+        const uiGameScreen = document.getElementById('game-screen');
+        const btnStart = document.getElementById('btn-start');
+        const btnHome = document.getElementById('btn-home');
+        const btnCheck = document.getElementById('btn-check');
+        const btnSkip = document.getElementById('btn-skip');
+        const uiTargetVnName = document.getElementById('target-vn-name');
+        const uiSlotsSymbol = document.getElementById('slots-symbol');
+        const uiSlotsIupac = document.getElementById('slots-iupac');
+        const uiLetterPool = document.getElementById('letter-pool');
+        const uiScoreDisplay = document.getElementById('score-display');
+
+        function initAudio() {
+            if (!synth) {
+                synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                synth.set({ oscillator: { type: "sine" }, envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 1 } });
+            }
+            if (!errorSynth) {
+                errorSynth = new Tone.Synth().toDestination();
+                errorSynth.set({ oscillator: { type: "sawtooth" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 } });
+            }
+        }
+
+        function playSound(type) {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            if (!synth || !errorSynth) return;
+
+            switch(type) {
+                case 'pop':
+                    synth.triggerAttackRelease("C5", "32n");
+                    break;
+                case 'place':
+                    synth.triggerAttackRelease("G4", "32n");
+                    break;
+                case 'success':
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("C4", "8n", now);
+                    synth.triggerAttackRelease("E4", "8n", now + 0.15);
+                    synth.triggerAttackRelease("G4", "8n", now + 0.3);
+                    synth.triggerAttackRelease("C5", "4n", now + 0.45);
+                    break;
+                case 'error':
+                    errorSynth.triggerAttackRelease("C2", "8n");
+                    break;
+            }
+        }
+
+        btnStart.addEventListener('click', async () => {
+            await Tone.start(); 
+            initAudio();
+            uiStartScreen.classList.add('hidden');
+            uiGameScreen.classList.remove('hidden');
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.playedIndices = [];
+            loadNextElement();
+        });
+
+        btnSkip.addEventListener('click', () => loadNextElement());
+
+        btnHome.addEventListener('click', () => {
+            uiGameScreen.classList.add('hidden');
+            uiStartScreen.classList.remove('hidden');
+            gameState.isPlaying = false;
+        });
+
+        btnCheck.addEventListener('click', () => checkAnswer());
+
+        function loadNextElement() {
+            if (gameState.playedIndices.length >= elementsData.length) {
+                gameState.playedIndices = []; 
+                gameState.score = 0;
+            }
+
+            let availableIndices = elementsData.map((_, i) => i).filter(i => !gameState.playedIndices.includes(i));
+            let randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            
+            gameState.playedIndices.push(randomIndex);
+            gameState.currentElement = elementsData[randomIndex];
+            
+            uiTargetVnName.textContent = gameState.currentElement.vn;
+            uiScoreDisplay.textContent = `Tiến độ: ${gameState.score} / ${elementsData.length}`;
+
+            gameState.symbolSlots = [];
+            gameState.iupacSlots = [];
+            gameState.pool = [];
+
+            let allChars = [];
+
+            // Tách từng chữ cái Ký hiệu (giữ nguyên Hoa/Thường)
+            for (let i = 0; i < gameState.currentElement.sym.length; i++) {
+                let char = gameState.currentElement.sym[i];
+                gameState.symbolSlots.push({ id: `sym_${i}`, expectedChar: char, filledBy: null });
+                allChars.push(char);
+            }
+
+            // Tách từng chữ cái IUPAC (giữ nguyên Hoa/Thường)
+            for (let i = 0; i < gameState.currentElement.iupac.length; i++) {
+                let char = gameState.currentElement.iupac[i];
+                gameState.iupacSlots.push({ id: `iupac_${i}`, expectedChar: char, filledBy: null });
+                allChars.push(char);
+            }
+
+            // Thêm nhiễu (distractors): Cả chữ HOA và chữ thường
+            const alphabetUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const alphabetLower = "abcdefghijklmnopqrstuvwxyz";
+            for(let i=0; i<4; i++) {
+                if (Math.random() > 0.5) {
+                    allChars.push(alphabetUpper[Math.floor(Math.random() * alphabetUpper.length)]);
+                } else {
+                    allChars.push(alphabetLower[Math.floor(Math.random() * alphabetLower.length)]);
+                }
+            }
+
+            // Xáo trộn ngẫu nhiên
+            allChars = allChars.sort(() => Math.random() - 0.5);
+
+            allChars.forEach((char, index) => {
+                gameState.pool.push({ id: `pool_${index}`, char: char, used: false });
+            });
+
+            renderUI();
+        }
+
+        function renderUI() {
+            uiSlotsSymbol.innerHTML = '';
+            gameState.symbolSlots.forEach(slot => uiSlotsSymbol.appendChild(createSlotElement('symbol', slot)));
+
+            uiSlotsIupac.innerHTML = '';
+            gameState.iupacSlots.forEach(slot => uiSlotsIupac.appendChild(createSlotElement('iupac', slot)));
+
+            uiLetterPool.innerHTML = '';
+            gameState.pool.forEach(item => {
+                if (!item.used) {
+                    uiLetterPool.appendChild(createLetterElement(item));
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'w-12 h-14 md:w-14 md:h-16 m-1 opacity-0 pointer-events-none';
+                    uiLetterPool.appendChild(placeholder);
+                }
+            });
+
+            checkIfReadyToSubmit();
+        }
+
+        function createLetterElement(item) {
+            const div = document.createElement('div');
+            div.className = 'w-12 h-14 md:w-14 md:h-16 rounded-xl flex items-center justify-center cursor-pointer select-none m-1 text-2xl font-black brick-3d';
+            div.textContent = item.char;
+            div.draggable = true;
+            div.id = item.id;
+
+            div.addEventListener('click', () => {
+                playSound('pop');
+                autoPlaceLetter(item.id);
+            });
+
+            div.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.id);
+                div.classList.add('opacity-50');
+            });
+            div.addEventListener('dragend', () => div.classList.remove('opacity-50'));
+
+            return div;
+        }
+
+        function createSlotElement(type, slot) {
+            const div = document.createElement('div');
+            
+            if (slot.filledBy) {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                div.textContent = poolItem.char;
+                div.className = 'slot w-12 h-14 md:w-14 md:h-16 rounded-xl flex items-center justify-center cursor-pointer select-none text-2xl font-black brick-3d';
+                
+                div.addEventListener('click', () => {
+                    playSound('place');
+                    returnLetterToPool(type, slot.id);
+                });
+            } else {
+                div.className = 'slot empty-slot w-12 h-14 md:w-14 md:h-16 border-4 border-dashed border-gray-300 bg-white/50 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl font-bold cursor-pointer transition-colors shadow-inner';
+                
+                div.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    div.classList.add('drag-over');
+                });
+                div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+                div.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    div.classList.remove('drag-over');
+                    const letterId = e.dataTransfer.getData('text/plain');
+                    if(letterId) {
+                        playSound('place');
+                        placeLetterInSpecificSlot(letterId, type, slot.id);
+                    }
+                });
+            }
+            return div;
+        }
+
+        function autoPlaceLetter(poolId) {
+            let targetSlot = gameState.symbolSlots.find(s => s.filledBy === null);
+            let type = 'symbol';
+            
+            if (!targetSlot) {
+                targetSlot = gameState.iupacSlots.find(s => s.filledBy === null);
+                type = 'iupac';
+            }
+
+            if (targetSlot) placeLetterInSpecificSlot(poolId, type, targetSlot.id);
+        }
+
+        function placeLetterInSpecificSlot(poolId, slotType, slotId) {
+            const poolItem = gameState.pool.find(p => p.id === poolId);
+            if (!poolItem) return;
+
+            const slotsArray = slotType === 'symbol' ? gameState.symbolSlots : gameState.iupacSlots;
+            const slot = slotsArray.find(s => s.id === slotId);
+            if (!slot) return;
+
+            if (slot.filledBy) {
+                const oldPoolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (oldPoolItem) oldPoolItem.used = false;
+            }
+
+            slot.filledBy = poolId;
+            poolItem.used = true;
+            renderUI();
+        }
+
+        function returnLetterToPool(slotType, slotId) {
+            const slotsArray = slotType === 'symbol' ? gameState.symbolSlots : gameState.iupacSlots;
+            const slot = slotsArray.find(s => s.id === slotId);
+            
+            if (slot && slot.filledBy) {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (poolItem) poolItem.used = false;
+                slot.filledBy = null;
+                renderUI();
+            }
+        }
+
+        function checkIfReadyToSubmit() {
+            const isSymbolFull = gameState.symbolSlots.every(s => s.filledBy !== null);
+            const isIupacFull = gameState.iupacSlots.every(s => s.filledBy !== null);
+            
+            if (isSymbolFull && isIupacFull) {
+                btnCheck.disabled = false;
+                btnCheck.classList.remove('opacity-50', 'cursor-not-allowed', 'translate-y-2');
+            } else {
+                btnCheck.disabled = true;
+                btnCheck.classList.add('opacity-50', 'cursor-not-allowed', 'translate-y-2');
+            }
+        }
+
+        function checkAnswer() {
+            let isSymbolCorrect = true;
+            let isIupacCorrect = true;
+
+            // Kiểm tra phân biệt hoa thường tuyệt đối
+            gameState.symbolSlots.forEach((slot) => {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (poolItem.char !== slot.expectedChar) isSymbolCorrect = false;
+            });
+
+            gameState.iupacSlots.forEach((slot) => {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (poolItem.char !== slot.expectedChar) isIupacCorrect = false;
+            });
+
+            if (isSymbolCorrect && isIupacCorrect) {
+                playSound('success');
+                fireConfetti();
+                gameState.score++;
+                uiScoreDisplay.textContent = `Tiến độ: ${gameState.score} / ${elementsData.length}`;
+                
+                formatWinningSlots();
+
+                btnCheck.textContent = "CHÍNH XÁC!";
+                btnCheck.classList.replace('bg-indigo-600', 'bg-green-500');
+                btnCheck.classList.replace('hover:bg-indigo-700', 'hover:bg-green-600');
+
+                setTimeout(() => {
+                    btnCheck.textContent = "KIỂM TRA";
+                    btnCheck.classList.replace('bg-green-500', 'bg-indigo-600');
+                    btnCheck.classList.replace('hover:bg-green-600', 'hover:bg-indigo-700');
+                    loadNextElement();
+                }, 2000);
+            } else {
+                playSound('error');
+                const card = document.querySelector('.element-card-3d');
+                card.classList.add('animate-shake', 'border-red-400');
+                
+                markWrongSlots();
+
+                setTimeout(() => {
+                    card.classList.remove('animate-shake', 'border-red-400');
+                    resetWrongSlotsStyle();
+                }, 800);
+            }
+        }
+
+        function formatWinningSlots() {
+            const symSlotsEl = uiSlotsSymbol.querySelectorAll('.slot');
+            symSlotsEl.forEach((el) => {
+                el.classList.replace('brick-3d', 'brick-correct-3d');
+                el.classList.add('animate-pop');
+            });
+
+            const iupacSlotsEl = uiSlotsIupac.querySelectorAll('.slot');
+            iupacSlotsEl.forEach((el) => {
+                el.classList.replace('brick-3d', 'brick-correct-3d');
+                el.classList.add('animate-pop');
+            });
+        }
+
+        function markWrongSlots() {
+            gameState.symbolSlots.forEach((slot, index) => {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (poolItem && poolItem.char !== slot.expectedChar) {
+                    uiSlotsSymbol.children[index].classList.replace('brick-3d', 'brick-wrong-3d');
+                }
+            });
+
+            gameState.iupacSlots.forEach((slot, index) => {
+                const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                if (poolItem && poolItem.char !== slot.expectedChar) {
+                    uiSlotsIupac.children[index].classList.replace('brick-3d', 'brick-wrong-3d');
+                }
+            });
+        }
+
+        function resetWrongSlotsStyle() {
+            const resetFn = (slots, container) => {
+                slots.forEach((slot, index) => {
+                    const poolItem = gameState.pool.find(p => p.id === slot.filledBy);
+                    if (poolItem && poolItem.char !== slot.expectedChar) {
+                        container.children[index].classList.replace('brick-wrong-3d', 'brick-3d');
+                    }
+                });
+            };
+            resetFn(gameState.symbolSlots, uiSlotsSymbol);
+            resetFn(gameState.iupacSlots, uiSlotsIupac);
+        }
+
+        // Setup pháo hoa
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function fireConfetti() {
+            particles = [];
+            const colors = ['#fde047', '#3b82f6', '#ef4444', '#10b981', '#a855f7'];
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 100,
+                    r: Math.random() * 6 + 3,
+                    dx: Math.random() * 20 - 10,
+                    dy: Math.random() * -15 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    gravity: 0.5,
+                    life: 1
+                });
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                if (p.life > 0) {
+                    active = true;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                    
+                    p.x += p.dx;
+                    p.y += p.dy;
+                    p.dy += p.gravity;
+                    p.life -= 0.01; 
+                    ctx.globalAlpha = p.life;
+                }
+            }
+            ctx.globalAlpha = 1;
+            if (active) requestAnimationFrame(animateConfetti);
+        }
+    </script>
+</body>
+</html>
